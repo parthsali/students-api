@@ -12,6 +12,7 @@ import (
 
 	"github.com/parthsali/students-api/internal/config"
 	"github.com/parthsali/students-api/internal/http/handlers/student"
+	"github.com/parthsali/students-api/internal/storage/sqlite"
 )
 
 func main() {
@@ -21,10 +22,17 @@ func main() {
 	cfg := config.MustLoad()
 
 	// setup database
+	storage, err := sqlite.New(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	slog.Info("storage initilized", slog.String("env", cfg.Env))
 
 	// setup router
 	router := http.NewServeMux()
-	router.HandleFunc("POST /api/students", student.New())
+	router.HandleFunc("POST /api/students", student.New(storage))
+	router.HandleFunc("GET /api/students/{id}", student.GetById(storage))
 
 	// setup server
 	server := http.Server{
